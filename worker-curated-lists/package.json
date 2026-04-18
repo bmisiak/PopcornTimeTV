@@ -1,0 +1,17 @@
+{
+  "name": "worker-curated-lists",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker that scrapes curated movie/show lists (Metacritic, Rotten Tomatoes) via Firecrawl, resolves IMDb IDs via OMDb, and filters to titles available on the PopcornTime catalog.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "refresh": "wrangler deploy --dry-run && echo 'Use POST /admin/refresh?id=<listId> on a deployed worker'",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^3.80.0"
+  }
+}

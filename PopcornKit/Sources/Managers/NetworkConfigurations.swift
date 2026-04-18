@@ -141,8 +141,16 @@ public struct OMDb {
 // cloudflare cached version of above
 public struct DHT {
     static let base = "https://popcorn-dht.8mdm9hjd2h.workers.dev"
-    
+
     static let defaultParameters: [String: String] = [:]
+}
+
+/// Cloudflare worker that serves curated Metacritic / Rotten Tomatoes lists
+/// filtered to titles available on the PopcornTime catalog. Source lives in
+/// `worker-curated-lists/` at the repo root. Replace `base` with the deployed
+/// worker URL once provisioned.
+public struct CuratedLists {
+    public static let base = "https://popcorn-curated-lists.workers.dev"
 }
 
 

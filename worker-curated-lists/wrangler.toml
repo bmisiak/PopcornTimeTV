@@ -1,0 +1,22 @@
+name = "popcorn-curated-lists"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# KV namespace used for: list registry, cached list results, IMDb-ID resolutions,
+# Popcorn availability probes. Create with:
+#   wrangler kv:namespace create CURATED_CACHE
+# and paste the returned id below.
+[[kv_namespaces]]
+binding = "CURATED_CACHE"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Weekly refresh: Mondays at 03:00 UTC. Adjust as desired.
+[triggers]
+crons = ["0 3 * * 1"]
+
+# Public env (non-secret). Secrets go via `wrangler secret put <NAME>`:
+#   FIRECRAWL_API_KEY
+#   OMDB_API_KEY
+#   ADMIN_TOKEN         (protects POST /admin/*)
+[vars]
+POPCORN_BASE = "https://uxert.link"
