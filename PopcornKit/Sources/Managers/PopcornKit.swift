@@ -16,7 +16,9 @@ public func loadShows(
     genre: Popcorn.Genres = .all,
     searchTerm: String? = nil,
     orderBy order: Popcorn.Orders = .descending) async throws -> [Show] {
-    return try await PopcornApi.shared.load(page, filterBy: filter, genre: genre, searchTerm: searchTerm, orderBy: order)
+    return try await performWithServerFailover {
+        try await PopcornApi.shared.load(page, filterBy: filter, genre: genre, searchTerm: searchTerm, orderBy: order)
+    }
 }
 
 /**
@@ -25,7 +27,9 @@ public func loadShows(
  - Parameter imdbId:        The imdb identification code of the show.
  */
 public func getShowInfo(_ imdbId: String) async throws -> Show {
-    return try await PopcornApi.shared.getInfo(imdbId)
+    return try await performWithServerFailover {
+        try await PopcornApi.shared.getInfo(imdbId)
+    }
 }
 
 
@@ -44,7 +48,9 @@ public func loadMovies(
     genre: Popcorn.Genres = .all,
     searchTerm: String? = nil,
     orderBy order: Popcorn.Orders = .descending) async throws -> [Movie] {
-    try await PopcornApi.shared.load(page, filterBy: filter, genre: genre, searchTerm: searchTerm, orderBy: order)
+    try await performWithServerFailover {
+        try await PopcornApi.shared.load(page, filterBy: filter, genre: genre, searchTerm: searchTerm, orderBy: order)
+    }
 }
 
 /**
@@ -53,7 +59,43 @@ public func loadMovies(
  - Parameter imdbId:        The imdb identification code of the movie.
  */
 public func getMovieInfo(_ imdbId: String) async throws -> Movie {
-    try await PopcornApi.shared.getInfo(imdbId)
+    try await performWithServerFailover {
+        try await PopcornApi.shared.getInfo(imdbId)
+    }
+}
+
+private func performWithServerFailover<T>(_ operation: () async throws -> T) async throws -> T {
+    do {
+        return try await operation()
+    } catch {
+        guard shouldAttemptServerFailover(for: error), await handleServerWasMoved() else {
+            throw error
+        }
+        return try await operation()
+    }
+}
+
+private func shouldAttemptServerFailover(for error: Error) -> Bool {
+    if error is CancellationError {
+        return false
+    }
+
+    if let urlError = error as? URLError {
+        return urlError.code != .cancelled && urlError.code != .notConnectedToInternet
+    }
+
+    if let apiError = error as? APIError {
+        switch apiError.type {
+        case .unacceptableStatusCode(let code):
+            return code >= 500
+        case .invalidHttpStatusCode, .missingContent, .couldNotDecodeResponse:
+            return true
+        case .missingSession, .unkown:
+            return false
+        }
+    }
+
+    return error is DecodingError
 }
 
 /**
@@ -124,9 +166,11 @@ public func setUserCustomUrls(newUrl: String?) async -> String {
 
 /// return if a live server is found
 public func handleServerWasMoved() async -> Bool {
+    let failedURL = Session.lastPopcornBaseUrl
+
     // check if any server is up, from previus saved list
     if let appUrls = Session.popcornBaseUrls,
-       let url = await PopcornKit.getFirstLivePopcornURL(fromUrls: appUrls) {
+       let url = await PopcornKit.getFirstLivePopcornURL(fromUrls: appUrls, excluding: failedURL) {
         PopcornApi.changeBaseUrl(newUrl: url)
         return true
     }
@@ -138,7 +182,7 @@ public func handleServerWasMoved() async -> Bool {
         }
         
         Session.popcornBaseUrls = urls
-        if let url = await PopcornKit.getFirstLivePopcornURL(fromUrls: urls) {
+        if let url = await PopcornKit.getFirstLivePopcornURL(fromUrls: urls, excluding: failedURL) {
             PopcornApi.changeBaseUrl(newUrl: url)
             return true
         }
@@ -148,16 +192,22 @@ public func handleServerWasMoved() async -> Bool {
 }
 
 /// get first url that is live from a list of separated by comma, by getting status
-private func getFirstLivePopcornURL(fromUrls from: String) async -> String? {
+private func getFirstLivePopcornURL(fromUrls from: String, excluding excludedURL: String? = nil) async -> String? {
     let urls = from.split(separator: ",").compactMap { URL(string: String($0)) }
     for url in urls {
+        let normalizedURL = url.absoluteString.hasSuffix("/")
+            ? String(url.absoluteString.dropLast())
+            : url.absoluteString
+        guard normalizedURL != excludedURL else {
+            continue
+        }
+
         let statusURL = url.appendingPathComponent("status")
-        if let _ = try? await URLSession.shared.data(from: statusURL) {
-            var serverUrl = url.absoluteString
-            if serverUrl.hasSuffix("/") {
-                serverUrl = String(serverUrl.dropLast())
-            }
-            return serverUrl
+        if let (data, response) = try? await URLSession.shared.data(from: statusURL),
+           let httpResponse = response as? HTTPURLResponse,
+           (200...299).contains(httpResponse.statusCode),
+           !data.isEmpty {
+            return normalizedURL
         }
     }
     
