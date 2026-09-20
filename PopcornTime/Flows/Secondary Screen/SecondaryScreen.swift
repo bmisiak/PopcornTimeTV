@@ -49,11 +49,13 @@ struct SecondaryScreen: ViewModifier {
 
 
     private func screenDidConnect(_ screen: UIScreen) {
-        let window = UIWindow(frame: screen.bounds)
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .first(where: { ($0 as? UIWindowScene)?.screen == screen }) as? UIWindowScene,
+              windowScene.session.role == .windowExternalDisplayNonInteractive else {
+            return
+        }
 
-        window.windowScene = UIApplication.shared.connectedScenes
-            .first { ($0 as? UIWindowScene)?.screen == screen }
-            as? UIWindowScene
+        let window = UIWindow(windowScene: windowScene)
         
         screen.overscanCompensation = .scale
 
