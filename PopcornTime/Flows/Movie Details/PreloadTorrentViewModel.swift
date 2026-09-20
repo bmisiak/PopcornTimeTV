@@ -177,26 +177,15 @@ class PreloadTorrentViewModel: ObservableObject {
     }
     
     func selectFileToStream(fileNames: [String], fileSizes: [NSNumber]) -> Int32 {
-        if fileNames.count == 1 {
-            return Int32(0)
+        if let selectedIndex = TorrentFileSelector.select(
+            torrent: torrent,
+            media: media,
+            fileNames: fileNames,
+            fileSizes: fileSizes
+        ) {
+            return Int32(selectedIndex)
         }
-        
-        var files = Array(zip(fileNames, fileSizes).enumerated())
-        
-        /// for series, keep only files with format: E01
-        if let episode = self.media as? Episode {
-            let findByEpisode = String(format: "E%02d", episode.episode)
-            files = files.filter { index, item in
-                item.0.lowercased().contains(findByEpisode.lowercased())
-            }
-        }
-        
-        /// the biggest file
-        let max = files.max { $0.element.1.int64Value < $1.element.1.int64Value  }
-        if let biggestFileIndex = max?.offset { //
-            return Int32(biggestFileIndex)
-        }
-        
+
         // let user select
         DispatchQueue.main.async {
             self.filesToPlay = fileNames

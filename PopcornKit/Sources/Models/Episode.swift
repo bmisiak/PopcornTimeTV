@@ -105,16 +105,17 @@ public struct Episode: Media, Equatable {
         self.largeBackgroundImage = try? map.value("images.fanart")
     }
     
-    public init(title: String = NSLocalizedString("Unknown", comment: ""), id: String = "0000000", tmdbId: Int? = nil, slug: String = "unknown", summary: String = "No summary available.".localized, torrents: [Torrent] = [], subtitles: Dictionary<String, [Subtitle]> = [:], largeBackgroundImage: String? = nil, largeCoverImage: String? = nil, show: Show? = nil, episode: Int = -1, season: Int = -1) {
+    public init(title: String = NSLocalizedString("Unknown", comment: ""), id: String = "0000000", imdbId: String? = nil, tmdbId: Int? = nil, slug: String = "unknown", summary: String = "No summary available.".localized, torrents: [Torrent] = [], subtitles: Dictionary<String, [Subtitle]> = [:], largeBackgroundImage: String? = nil, largeCoverImage: String? = nil, show: Show? = nil, episode: Int = -1, season: Int = -1, firstAirDate: Date = .distantPast) {
         self.title = title
         self.id = id
+        self.imdbId = imdbId
         self.tmdbId = tmdbId
         self.slug = slug
         self.summary = summary
         self.torrents = torrents
         self.subtitles = subtitles
         self.largeBackgroundImage = largeBackgroundImage
-        self.firstAirDate = .distantPast
+        self.firstAirDate = firstAirDate
         self.show = show
         self.season = season
         self.episode = episode

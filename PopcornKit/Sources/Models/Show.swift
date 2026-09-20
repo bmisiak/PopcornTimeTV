@@ -161,18 +161,21 @@ public struct Show: Media, Equatable, Identifiable {
         self.episodes.sort(by: { $0.episode < $1.episode })
     }
     
-    public init(title: String = "Unknown".localized, id: String = "tt0000000", tmdbId: Int? = nil, slug: String = "unknown", summary: String = "No summary available.".localized, torrents: [Torrent] = [], subtitles: [Subtitle] = [], largeBackgroundImage: String? = nil, largeCoverImage: String? = nil) {
+    public init(title: String = "Unknown".localized, id: String = "tt0000000", tmdbId: Int? = nil, tvdbId: String = "0000000", slug: String = "unknown", year: String = "", rating: Double = 0, runtime: Int? = nil, status: String? = nil, genres: [String] = [], summary: String = "No summary available.".localized, episodes: [Episode] = [], largeBackgroundImage: String? = nil, largeCoverImage: String? = nil) {
         self.title = title
         self.id = id
         self.tmdbId = tmdbId
         self.slug = slug
         self.summary = summary
+        self.episodes = episodes
+        self.genres = genres
         self.largeBackgroundImage = largeBackgroundImage
         self.largeCoverImage = largeCoverImage
-        self.year = ""
-        self.rating = 0.0
-        self.runtime = 0
-        self.tvdbId = "0000000"
+        self.year = year
+        self.rating = rating
+        self.runtime = runtime
+        self.status = status
+        self.tvdbId = tvdbId
     }
     
     public mutating func mapping(map: Map) {

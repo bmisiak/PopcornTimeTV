@@ -19,7 +19,7 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
     
     struct AlertType: Identifiable {
         enum Choice {
-            case noTorrentsFound, streamOnCellular
+            case noTorrentsFound, streamOnCellular, streamProviderError
         }
 
         var id: Choice
@@ -28,6 +28,8 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
     
     @State var showChooseQualityActionSheet = false
     @State var alert: AlertType?
+    @State private var resolvedTorrents: [Torrent] = []
+    @State private var streamProviderError: String?
     
     var body: some View {
         return Button(action: {
@@ -36,12 +38,10 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
                 return
             }
             
-            if media.torrents.count == 0 {
-                alert = .init(id: .noTorrentsFound)
-            } else if let torrent = autoSelectTorrent {
-                action(torrent)
+            if availableTorrents.isEmpty {
+                Task { await resolveStreams() }
             } else {
-                showChooseQualityActionSheet = true
+                presentStreams()
             }
         }, label: label)
         #if os(iOS) || os(tvOS)
@@ -71,6 +71,9 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
                         Session.streamOnCellular = true
                       },
                       secondaryButton: .cancel())
+            case .streamProviderError:
+                return Alert(title: Text("Unable to find torrents"),
+                             message: Text(streamProviderError ?? "The stream provider is temporarily unavailable."))
             }
             
         }
@@ -83,14 +86,14 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
     
     var autoSelectTorrent: Torrent? {
         if let quality = Session.autoSelectQuality {
-            let sorted  = media.torrents.sorted(by: <)
+            let sorted  = availableTorrents.sorted(by: <)
             let torrent = quality == "Highest" ? sorted.last! : sorted.first!
             return torrent
         }
         
         #if os(tvOS)
-        if media.torrents.count == 1 {
-            return media.torrents[0]
+        if availableTorrents.count == 1 {
+            return availableTorrents[0]
         }
         #endif
         
@@ -99,7 +102,7 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
 
     @ViewBuilder
     var chooseTorrentsButtons: some View {
-        ForEach(media.torrents.sorted(by: >)) { torrent in
+        ForEach(availableTorrents.sorted(by: >)) { torrent in
             Button {
                 action(torrent)
             } label: {
@@ -116,6 +119,31 @@ struct SelectTorrentQualityButton<Label>: View where Label : View {
                 Spacer()
                 #endif
             }
+        }
+    }
+
+    private var availableTorrents: [Torrent] {
+        resolvedTorrents.isEmpty ? media.torrents : resolvedTorrents
+    }
+
+    @MainActor
+    private func resolveStreams() async {
+        do {
+            resolvedTorrents = try await TorrentioApi.shared.streams(for: media)
+            presentStreams()
+        } catch TorrentioError.noStreams {
+            alert = .init(id: .noTorrentsFound)
+        } catch {
+            streamProviderError = error.localizedDescription
+            alert = .init(id: .streamProviderError)
+        }
+    }
+
+    private func presentStreams() {
+        if let torrent = autoSelectTorrent {
+            action(torrent)
+        } else {
+            showChooseQualityActionSheet = true
         }
     }
 }

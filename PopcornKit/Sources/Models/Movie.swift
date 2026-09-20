@@ -160,20 +160,22 @@ public struct Movie: Media, Equatable, Identifiable {
         torrents.sort(by: <)
     }
     
-    public init(title: String = "Unknown".localized, id: String = "tt0000000", tmdbId: Int? = nil, slug: String = "unknown", summary: String = "No summary available.".localized, torrents: [Torrent] = [], subtitles: Dictionary<String, [Subtitle]> = [:], largeBackgroundImage: String? = nil, largeCoverImage: String? = nil) {
+    public init(title: String = "Unknown".localized, id: String = "tt0000000", tmdbId: Int? = nil, slug: String = "unknown", year: String = "", rating: Double = 0, runtime: Int = 0, certification: String = "Unrated", genres: [String] = [], summary: String = "No summary available.".localized, trailer: String? = nil, torrents: [Torrent] = [], subtitles: Dictionary<String, [Subtitle]> = [:], largeBackgroundImage: String? = nil, largeCoverImage: String? = nil) {
         self.title = title
         self.id = id
         self.tmdbId = tmdbId
         self.slug = slug
         self.summary = summary
+        self.trailer = trailer
         self.torrents = torrents
         self.subtitles = subtitles
         self.largeBackgroundImage = largeBackgroundImage
         self.largeCoverImage = largeCoverImage
-        self.year = ""
-        self.certification = "Unrated"
-        self.rating = 0.0
-        self.runtime = 0
+        self.year = year
+        self.certification = certification
+        self.rating = rating
+        self.runtime = runtime
+        self.genres = genres
     }
 
     public mutating func mapping(map: Map) {
@@ -241,5 +243,4 @@ extension Movie: Hashable {
 //public func ==(lhs: Movie, rhs: Movie) -> Bool {
 //    return lhs.id == rhs.id
 //}
-
 

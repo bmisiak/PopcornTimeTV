@@ -53,6 +53,12 @@ public struct Torrent: Mappable, Equatable, Comparable {
     
     /// Size of the torrent. Will be `nil` if object is episode.
     public let size: String?
+
+    /// Exact file to stream when the torrent contains multiple video files.
+    public let fileIndex: Int?
+
+    /// Filename reported by the stream provider, used to verify `fileIndex` before playback.
+    public let filename: String?
     
     public init?(map: Map) {
         do { self = try Torrent(map) }
@@ -64,6 +70,8 @@ public struct Torrent: Mappable, Equatable, Comparable {
         self.seeds = (try? (try? map.value("seeds")) ?? map.value(("seed"))) ?? 0
         self.peers = (try? (try? map.value("peers")) ?? map.value(("peer"))) ?? 0
         self.size = try? map.value("filesize")
+        self.fileIndex = try? map.value("fileIndex")
+        self.filename = try? map.value("filename")
         self.quality = try? map.value("quality") // Will only not be `nil` if object is mapped from JSON array, otherwise this is set in `Show or Movie` struct.
         
         // First calculate the seed/peer ratio
@@ -99,13 +107,15 @@ public struct Torrent: Mappable, Equatable, Comparable {
         }
     }
     
-    public init(health: Health = .unknown, url: String = "", quality: String = "0p", seeds: Int = 0, peers: Int = 0, size: String? = nil) {
+    public init(health: Health = .unknown, url: String = "", quality: String = "0p", seeds: Int = 0, peers: Int = 0, size: String? = nil, fileIndex: Int? = nil, filename: String? = nil) {
         self.health = health
         self.url = url
         self.quality = quality
         self.seeds = seeds
         self.peers = peers
         self.size = size
+        self.fileIndex = fileIndex
+        self.filename = filename
     }
     
     public mutating func mapping(map: Map) {
@@ -121,6 +131,8 @@ public struct Torrent: Mappable, Equatable, Comparable {
             peers >>> map["peers"]
             quality >>> map["quality"]
             size >>> map["filesize"]
+            fileIndex >>> map["fileIndex"]
+            filename >>> map["filename"]
         }
     }
 }
