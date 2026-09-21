@@ -62,15 +62,7 @@ class MoviesViewModel: ObservableObject {
                 self.hasNextPage = !movies.isEmpty
                 self.page += 1
             } catch {
-                // A server with the specified hostname could not be found.
-                // try to find alternative servers
-                if let error = error as NSError?, error.code == -1003,
-                   await PopcornKit.handleServerWasMoved() {
-                    self.task = nil
-                    self.loadMovies() // try again
-                } else {
-                    self.error = error
-                }
+                self.error = error
             }
             self.task = nil
         }

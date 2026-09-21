@@ -16,13 +16,13 @@ public func loadShows(
     genre: Popcorn.Genres = .all,
     searchTerm: String? = nil,
     orderBy order: Popcorn.Orders = .descending) async throws -> [Show] {
-    do {
-        return try await TMDBCatalogApi.shared.loadShows(page: page, filter: filter, genre: genre, searchTerm: searchTerm)
-    } catch {
-        return try await performWithServerFailover {
-            try await PopcornApi.shared.load(page, filterBy: filter, genre: genre, searchTerm: searchTerm, orderBy: order)
-        }
-    }
+    try await CatalogProvider.current.loadShows(
+        page: page,
+        filter: filter,
+        genre: genre,
+        searchTerm: searchTerm,
+        order: order
+    )
 }
 
 /**
@@ -31,13 +31,7 @@ public func loadShows(
  - Parameter imdbId:        The imdb identification code of the show.
  */
 public func getShowInfo(_ imdbId: String) async throws -> Show {
-    do {
-        return try await TMDBCatalogApi.shared.show(imdbID: imdbId)
-    } catch {
-        return try await performWithServerFailover {
-            try await PopcornApi.shared.getInfo(imdbId)
-        }
-    }
+    try await CatalogProvider.current.showDetails(imdbID: imdbId)
 }
 
 
@@ -56,13 +50,13 @@ public func loadMovies(
     genre: Popcorn.Genres = .all,
     searchTerm: String? = nil,
     orderBy order: Popcorn.Orders = .descending) async throws -> [Movie] {
-    do {
-        return try await TMDBCatalogApi.shared.loadMovies(page: page, filter: filter, genre: genre, searchTerm: searchTerm)
-    } catch {
-        return try await performWithServerFailover {
-            try await PopcornApi.shared.load(page, filterBy: filter, genre: genre, searchTerm: searchTerm, orderBy: order)
-        }
-    }
+    try await CatalogProvider.current.loadMovies(
+        page: page,
+        filter: filter,
+        genre: genre,
+        searchTerm: searchTerm,
+        order: order
+    )
 }
 
 /**
@@ -71,47 +65,7 @@ public func loadMovies(
  - Parameter imdbId:        The imdb identification code of the movie.
  */
 public func getMovieInfo(_ imdbId: String) async throws -> Movie {
-    do {
-        return try await TMDBCatalogApi.shared.movie(imdbID: imdbId)
-    } catch {
-        return try await performWithServerFailover {
-            try await PopcornApi.shared.getInfo(imdbId)
-        }
-    }
-}
-
-private func performWithServerFailover<T>(_ operation: () async throws -> T) async throws -> T {
-    do {
-        return try await operation()
-    } catch {
-        guard shouldAttemptServerFailover(for: error), await handleServerWasMoved() else {
-            throw error
-        }
-        return try await operation()
-    }
-}
-
-private func shouldAttemptServerFailover(for error: Error) -> Bool {
-    if error is CancellationError {
-        return false
-    }
-
-    if let urlError = error as? URLError {
-        return urlError.code != .cancelled && urlError.code != .notConnectedToInternet
-    }
-
-    if let apiError = error as? APIError {
-        switch apiError.type {
-        case .unacceptableStatusCode(let code):
-            return code >= 500
-        case .invalidHttpStatusCode, .missingContent, .couldNotDecodeResponse:
-            return true
-        case .missingSession, .unkown:
-            return false
-        }
-    }
-
-    return error is DecodingError
+    try await CatalogProvider.current.movieDetails(imdbID: imdbId)
 }
 
 /**
