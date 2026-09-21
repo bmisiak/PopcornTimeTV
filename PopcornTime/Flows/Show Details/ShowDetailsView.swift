@@ -32,20 +32,15 @@ struct ShowDetailsView: View, MediaPosterLoader {
                 ScrollView {
                     HStack {
                         VStack(alignment: .leading) {
-                            HStack {
-                                Text(show.title)
-                                    .font(theme.titleFont)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .minimumScaleFactor(0.01)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
-                                    .padding(.bottom, 50)
-                                    .padding(.top, 200)
-
-                                Spacer()
-                                    .hideIfPhone()
-                            }
-                            .frame(maxWidth: .infinity)
+                            Text(show.title)
+                                .font(theme.titleFont)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .minimumScaleFactor(0.01)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.bottom, 50)
+                                .padding(.top, 200)
                             
                             VStack(alignment: .leading, spacing: 50) {
                                 
@@ -63,8 +58,10 @@ struct ShowDetailsView: View, MediaPosterLoader {
                                 if horizontalSizeClass == .compact {
                                     ScrollView(.horizontal) {
                                         actionButtons(scroll: scroll)
+                                            .padding(.horizontal, theme.watchedSection.leading)
                                             .padding(.bottom, 20)
                                     }
+                                    .ignoresSafeArea(.container, edges: .horizontal)
                                 } else {
                                     actionButtons(scroll: scroll)
                                         .padding(.bottom, 20)
@@ -139,7 +136,6 @@ struct ShowDetailsView: View, MediaPosterLoader {
             viewModel.load()
         }
         .environmentObject(viewModel)
-        .ignoresSafeArea()
     }
     
     func backgroundImage() -> some View {
@@ -153,6 +149,7 @@ struct ShowDetailsView: View, MediaPosterLoader {
             .overlay(
                 Color(white: 0, opacity: theme.backgroundOpacity))
             .clipped()
+            .ignoresSafeArea(.container)
     }
 
     var infoText: some View {
@@ -290,6 +287,7 @@ struct ShowDetailsView: View, MediaPosterLoader {
                 .padding([.top, .bottom], 20) // on focus zoom will not be clipped
                 #endif
             }
+            .ignoresSafeArea(.container, edges: .horizontal)
         }
         .frame(height: theme.watchedSection.height)
         .padding(0)

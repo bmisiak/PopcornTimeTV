@@ -38,7 +38,6 @@ struct MovieDetailsView: View, MediaPosterLoader {
                             }
                             .padding(.bottom, 50)
                             .padding(.top, 200)
-                            .padding(.leading, -theme.leftSectionLeading)
                                 
                             HStack(alignment: .top, spacing: 40) {
                                 leftSection
@@ -46,20 +45,20 @@ struct MovieDetailsView: View, MediaPosterLoader {
                                 rightSection(scroll: scroll)
                                 Spacer()
                             }
-                            .padding(.leading, 10)
+                            .padding(.leading, theme.leftSectionLeading + 10)
                             #if os(iOS)
                             if horizontalSizeClass == .compact {
                                 ScrollView(.horizontal) {
                                     actionButtons(scroll: nil)
-                                        .padding([.leading, .top, .bottom], 10)
+                                        .padding([.leading, .trailing, .top, .bottom], 10)
                                 }
+                                .ignoresSafeArea(.container, edges: .horizontal)
                             } else {
                                 actionButtons(scroll: nil)
                                     .padding(.top, 10)
                             }
                             #endif
                         }
-                        .padding(.leading, theme.leftSectionLeading)
                         .frame(idealHeight: theme.section1Height)
                         .id(section1)
                         #if os(tvOS)
@@ -106,7 +105,6 @@ struct MovieDetailsView: View, MediaPosterLoader {
             }.onDisappear {
 //                viewModel.stopTheme()
             }
-        .ignoresSafeArea()
     }
     
     func backgroundImage() -> some View {
@@ -120,6 +118,7 @@ struct MovieDetailsView: View, MediaPosterLoader {
             .overlay(
                 Color(white: 0, opacity: theme.backgroundOpacity))
             .clipped()
+            .ignoresSafeArea(.container)
     }
     
     @ViewBuilder
@@ -287,6 +286,7 @@ struct MovieDetailsView: View, MediaPosterLoader {
                 .padding([.top, .bottom], 20) // on focus zoom will not be clipped
                 #endif
             }
+            .ignoresSafeArea(.container, edges: .horizontal)
         }
         .frame(height: theme.watchedSection.height)
         .padding(0)

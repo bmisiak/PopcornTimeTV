@@ -42,6 +42,7 @@ struct ActorsCrewView: View, CharacterHeadshotLoader {
                 Spacer()
             }
             .frame(height: theme.height)
+            .ignoresSafeArea(.container, edges: .horizontal)
         }
         .padding(0)
     }
