@@ -290,13 +290,6 @@ struct MovieDetailsView: View, MediaPosterLoader {
         }
         .frame(height: theme.watchedSection.height)
         .padding(0)
-        .background(
-            Color(white: 0, opacity: 0.3)
-                .padding([.bottom], -10)
-            #if os(tvOS)
-                .padding([.top], -30)
-            #endif
-        )
     }
     
     @ViewBuilder
