@@ -38,15 +38,10 @@ struct ActorsCrewView: View, CharacterHeadshotLoader {
                             }
                     }
                 }
-                #if !os(iOS)
-                .padding(.horizontal, theme.leading)
-                #endif
                 Spacer()
             }
             .frame(height: theme.height)
-            #if os(iOS)
             .contentMargins(.horizontal, theme.leading, for: .scrollContent)
-            #endif
             .ignoresSafeArea(.container, edges: .horizontal)
         }
         .padding(0)
