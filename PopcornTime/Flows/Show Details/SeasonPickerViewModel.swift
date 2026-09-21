@@ -30,8 +30,8 @@ class SeasonPickerViewModel: ObservableObject {
         
         isLoading = true
         Task { @MainActor in
-            if show.tmdbId == nil, let tmdbId = try? await TraktApi.shared.getTMDBId(forImdbId: show.id) {
-                self.show.tmdbId = tmdbId
+            if show.tmdbId == nil, let catalogShow = try? await getShowInfo(show.id) {
+                self.show.tmdbId = catalogShow.tmdbId
             }
             
             self.seasons = show.seasonNumbers.compactMap{ .init(number: $0, image: nil) }

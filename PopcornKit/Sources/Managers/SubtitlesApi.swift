@@ -197,7 +197,7 @@ open class SubtitlesApi {
             params["imdb_id"] = cleanId
         } else if let episode = episode {
             params["episode_number"] = String(episode.episode)
-            params["query"] = episode.title
+            params["query"] = episode.show?.title ?? episode.title
             params["season_number"] = String(episode.season)
         }
         

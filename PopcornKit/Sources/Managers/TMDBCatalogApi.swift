@@ -11,6 +11,8 @@ final class TMDBCatalogApi {
     }
 
     func loadMovies(page: Int, filter: Popcorn.Filters, genre: Popcorn.Genres, searchTerm: String?) async throws -> [Movie] {
+        // TODO: Batch TMDB detail enrichment where the API supports appended responses, and cache
+        // enriched media by TMDB ID so pagination and repeated screens do not refetch every item.
         var query = ["page": String(page)]
         let path: String
         if let searchTerm, !searchTerm.isEmpty {
@@ -38,6 +40,8 @@ final class TMDBCatalogApi {
     }
 
     func loadShows(page: Int, filter: Popcorn.Filters, genre: Popcorn.Genres, searchTerm: String?) async throws -> [Show] {
+        // TODO: Batch TMDB detail enrichment where the API supports appended responses, and cache
+        // enriched media by TMDB ID so pagination and repeated screens do not refetch every item.
         var query = ["page": String(page)]
         let path: String
         if let searchTerm, !searchTerm.isEmpty {
