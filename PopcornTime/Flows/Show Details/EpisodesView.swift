@@ -43,8 +43,14 @@ struct EpisodesView: View {
                     #if os(tvOS)
                     .padding(.bottom, 55) // allow card style - shadow to be visible
                     #endif
+                    #if !os(iOS)
                     .padding([.leading, .trailing], theme.leading)
+                    #endif
                 }
+                #if os(iOS)
+                .contentMargins(.horizontal, theme.leading, for: .scrollContent)
+                .ignoresSafeArea(.container, edges: .horizontal)
+                #endif
                 .onAppear {
                     if let episode = currentEpisode {
                         currentEpisode = episode /// so that downloadModel is created in didSet

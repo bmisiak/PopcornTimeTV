@@ -50,8 +50,9 @@ struct MovieDetailsView: View, MediaPosterLoader {
                             if horizontalSizeClass == .compact {
                                 ScrollView(.horizontal) {
                                     actionButtons(scroll: nil)
-                                        .padding([.leading, .trailing, .top, .bottom], 10)
+                                        .padding(.vertical, 10)
                                 }
+                                .contentMargins(.horizontal, 10, for: .scrollContent)
                                 .ignoresSafeArea(.container, edges: .horizontal)
                             } else {
                                 actionButtons(scroll: nil)
@@ -281,11 +282,16 @@ struct MovieDetailsView: View, MediaPosterLoader {
                             }
                     }
                 }
+                #if !os(iOS)
                 .padding(.horizontal, theme.watchedSection.leading)
+                #endif
                 #if os(tvOS)
                 .padding([.top, .bottom], 20) // on focus zoom will not be clipped
                 #endif
             }
+            #if os(iOS)
+            .contentMargins(.horizontal, theme.watchedSection.leading, for: .scrollContent)
+            #endif
             .ignoresSafeArea(.container, edges: .horizontal)
         }
         .frame(height: theme.watchedSection.height)
