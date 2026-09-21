@@ -31,8 +31,8 @@ class PersonDetailsViewModel: ObservableObject, MediaPosterLoader {
         isLoading = true
         Task { @MainActor in
             do {
-                async let moviesCredits = TraktApi.shared.getMediaCredits(forPersonWithId: person.imdbId, mediaType: Movie.self)
-                async let showCredits = TraktApi.shared.getMediaCredits(forPersonWithId: person.imdbId, mediaType: Show.self)
+                async let moviesCredits = PopcornKit.getMovieCredits(for: person)
+                async let showCredits = PopcornKit.getShowCredits(for: person)
                 self.movies = try await moviesCredits
                 self.shows = try await showCredits
                 self.didLoad = true

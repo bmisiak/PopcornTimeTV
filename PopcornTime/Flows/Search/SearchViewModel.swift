@@ -64,7 +64,7 @@ class SearchViewModel: ObservableObject {
                 case .shows:
                     self.shows = try await PopcornKit.loadShows(searchTerm: text)
                 case .people:
-                    self.persons = try await TraktApi.shared.search(forPerson: text)
+                    self.persons = try await PopcornKit.searchPeople(text)
                 }
             } catch {
                 self.error = error

@@ -76,6 +76,100 @@ final class TMDBCatalogApi {
         return try await show(id: id, includeEpisodes: true)
     }
 
+    func movieRecommendations(tmdbID: Int) async throws -> [Movie] {
+        let page: CatalogPage = try await request("/movie/\(tmdbID)/recommendations")
+        return try await withThrowingTaskGroup(of: (Int, Movie?).self) { group in
+            for (index, item) in page.results.enumerated() {
+                group.addTask { (index, try? await self.movie(id: item.id)) }
+            }
+            var movies = [(Int, Movie)]()
+            for try await (index, movie) in group {
+                if let movie { movies.append((index, movie)) }
+            }
+            return movies.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+    }
+
+    func showRecommendations(tmdbID: Int) async throws -> [Show] {
+        let page: CatalogPage = try await request("/tv/\(tmdbID)/recommendations")
+        return try await withThrowingTaskGroup(of: (Int, Show?).self) { group in
+            for (index, item) in page.results.enumerated() {
+                group.addTask { (index, try? await self.show(id: item.id, includeEpisodes: false)) }
+            }
+            var shows = [(Int, Show)]()
+            for try await (index, show) in group {
+                if let show { shows.append((index, show)) }
+            }
+            return shows.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+    }
+
+    func credits(type: TMDB.MediaType, tmdbID: Int) async throws -> MediaCredits {
+        let response: CreditsResponse = try await request("/\(type.rawValue)/\(tmdbID)/credits")
+        let actors = response.cast.map {
+            Actor(
+                name: $0.name,
+                imdbId: "tmdb:\($0.id)",
+                tmdbId: $0.id,
+                largeImage: imageURL($0.profilePath, size: "original"),
+                characterName: $0.character ?? ""
+            )
+        }
+        let crew = response.crew.map {
+            Crew(
+                name: $0.name,
+                imdbId: "tmdb:\($0.id)",
+                tmdbId: $0.id,
+                largeImage: imageURL($0.profilePath, size: "original"),
+                job: $0.job ?? "",
+                roleType: Role(rawValue: $0.department?.lowercased() ?? "") ?? .unknown
+            )
+        }
+        return MediaCredits(actors: actors, crew: crew)
+    }
+
+    func searchPeople(query: String) async throws -> [Person] {
+        let page: PersonPage = try await request("/search/person", query: ["query": query])
+        return page.results.map {
+            Actor(
+                name: $0.name,
+                imdbId: "tmdb:\($0.id)",
+                tmdbId: $0.id,
+                largeImage: imageURL($0.profilePath, size: "original")
+            )
+        }
+    }
+
+    func movieCredits(personID: Int) async throws -> [Movie] {
+        let credits: CombinedCredits = try await request("/person/\(personID)/combined_credits")
+        let items = credits.cast.filter { $0.mediaType == "movie" }
+        return try await withThrowingTaskGroup(of: (Int, Movie?).self) { group in
+            for (index, item) in items.enumerated() {
+                group.addTask { (index, try? await self.movie(id: item.id)) }
+            }
+            var movies = [(Int, Movie)]()
+            for try await (index, movie) in group {
+                if let movie { movies.append((index, movie)) }
+            }
+            return movies.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+    }
+
+    func showCredits(personID: Int) async throws -> [Show] {
+        let credits: CombinedCredits = try await request("/person/\(personID)/combined_credits")
+        let items = credits.cast.filter { $0.mediaType == "tv" }
+        return try await withThrowingTaskGroup(of: (Int, Show?).self) { group in
+            for (index, item) in items.enumerated() {
+                group.addTask { (index, try? await self.show(id: item.id, includeEpisodes: false)) }
+            }
+            var shows = [(Int, Show)]()
+            for try await (index, show) in group {
+                if let show { shows.append((index, show)) }
+            }
+            return shows.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+    }
+
     private func movie(id: Int) async throws -> Movie {
         let detail: MovieDetail = try await request("/movie/\(id)", query: ["append_to_response": "external_ids,videos"])
         guard let imdbID = detail.externalIDs?.imdbID ?? detail.imdbID else { throw CatalogError.missingIMDbID }
@@ -276,6 +370,43 @@ private struct EpisodeDetail: Decodable {
         case id, name, overview
         case episodeNumber = "episode_number"; case seasonNumber = "season_number"
         case airDate = "air_date"; case stillPath = "still_path"
+    }
+}
+
+private struct CreditsResponse: Decodable {
+    let cast: [CreditPerson]
+    let crew: [CreditPerson]
+}
+
+private struct CreditPerson: Decodable {
+    let id: Int
+    let name: String
+    let character: String?
+    let job: String?
+    let department: String?
+    let profilePath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, character, job, department
+        case profilePath = "profile_path"
+    }
+}
+
+private struct PersonPage: Decodable {
+    let results: [CreditPerson]
+}
+
+private struct CombinedCredits: Decodable {
+    let cast: [CombinedCredit]
+}
+
+private struct CombinedCredit: Decodable {
+    let id: Int
+    let mediaType: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case mediaType = "media_type"
     }
 }
 

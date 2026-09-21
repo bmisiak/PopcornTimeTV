@@ -68,6 +68,30 @@ public func getMovieInfo(_ imdbId: String) async throws -> Movie {
     try await CatalogProvider.current.movieDetails(imdbID: imdbId)
 }
 
+public func getMovieRecommendations(for movie: Movie) async throws -> [Movie] {
+    try await CatalogProvider.current.movieRecommendations(for: movie)
+}
+
+public func getShowRecommendations(for show: Show) async throws -> [Show] {
+    try await CatalogProvider.current.showRecommendations(for: show)
+}
+
+public func getCredits(for media: Media) async throws -> MediaCredits {
+    try await CatalogProvider.current.credits(for: media)
+}
+
+public func searchPeople(_ query: String) async throws -> [Person] {
+    try await CatalogProvider.current.searchPeople(query: query)
+}
+
+public func getMovieCredits(for person: Person) async throws -> [Movie] {
+    try await CatalogProvider.current.movieCredits(for: person)
+}
+
+public func getShowCredits(for person: Person) async throws -> [Show] {
+    try await CatalogProvider.current.showCredits(for: person)
+}
+
 /**
  Download torrent file from link.
  

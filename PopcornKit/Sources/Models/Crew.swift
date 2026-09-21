@@ -45,13 +45,17 @@ public struct Crew: Person, Equatable {
         self.roleType = (try? map.value("roleType")) ?? .unknown // Will only not be `nil` if object is mapped from JSON array, otherwise this is set in `TraktManager` object.
     }
     
-    public init(name: String = "Unknown", imdbId: String = "nm0000000", tmdbId: Int = 0000000, largeImage: String? = nil) {
+    public init(name: String, imdbId: String, tmdbId: Int, largeImage: String?) {
+        self.init(name: name, imdbId: imdbId, tmdbId: tmdbId, largeImage: largeImage, job: "", roleType: .unknown)
+    }
+
+    public init(name: String = "Unknown", imdbId: String = "nm0000000", tmdbId: Int = 0000000, largeImage: String? = nil, job: String, roleType: Role) {
         self.name = name
-        self.job = ""
+        self.job = job
         self.largeImage = largeImage
         self.imdbId = imdbId
         self.tmdbId = tmdbId
-        self.roleType =  .unknown
+        self.roleType = roleType
     }
     
     public mutating func mapping(map: Map) {

@@ -60,11 +60,10 @@ class ShowDetailsViewModel: ObservableObject {
         isLoading = true
         Task { @MainActor in
             do  {
-                async let related = TraktApi.shared.getRelated(self.show)
-                async let people = TraktApi.shared.getPeople(forMediaOfType: .shows, id: self.show.id)
-                async let tmdbIdLoader = TraktApi.shared.getTMDBId(forImdbId: show.id)
-                
-                var show = try await PopcornKit.getShowInfo(show.id)
+                let resolvedShow = try await PopcornKit.getShowInfo(show.id)
+                async let related = PopcornKit.getShowRecommendations(for: resolvedShow)
+                async let people = PopcornKit.getCredits(for: resolvedShow)
+                var show = resolvedShow
                 show.largeBackgroundImage = self.show.largeBackgroundImage ?? show.largeBackgroundImage //keep last background
                 show.ratings = self.show.ratings
                 self.show = show
@@ -77,14 +76,10 @@ class ShowDetailsViewModel: ObservableObject {
                     return
                 }
                 
-                // load tmdbId so we can show episode preview
-                if show.tmdbId == nil, let tmdbId = try? await tmdbIdLoader {
-                    self.show.tmdbId = tmdbId
-                }
                 self.currentSeason = season
                 
                 self.related = (try? await related) ?? []
-                let persons = (try? await people) ?? (actors: [], crew: [])
+                let persons = (try? await people) ?? MediaCredits(actors: [], crew: [])
                 self.persons = persons.actors + persons.crew
             } catch {
                 self.error = error

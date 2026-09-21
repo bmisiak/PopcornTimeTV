@@ -51,16 +51,16 @@ class MovieDetailsViewModel: ObservableObject, CharacterHeadshotLoader, MediaRat
         isLoading = true
         Task { @MainActor in
             do {
-                async let related = TraktApi.shared.getRelated(self.movie)
-                async let people = TraktApi.shared.getPeople(forMediaOfType: .movies, id: self.movie.id)
-                
-                var movie = try await PopcornKit.getMovieInfo(movie.id)
+                let resolvedMovie = try await PopcornKit.getMovieInfo(movie.id)
+                async let related = PopcornKit.getMovieRecommendations(for: resolvedMovie)
+                async let people = PopcornKit.getCredits(for: resolvedMovie)
+                var movie = resolvedMovie
                 movie.ratings = self.movie.ratings
                 movie.largeBackgroundImage = self.movie.largeBackgroundImage ?? movie.largeBackgroundImage //keep last background
                 self.movie = movie
                 self.downloadModel = DownloadButtonViewModel(media: movie)
                 
-                let persons = (try? await people) ?? (actors: [], crew: [])
+                let persons = (try? await people) ?? MediaCredits(actors: [], crew: [])
                 self.related = (try? await related) ?? []
                 self.persons = persons.actors + persons.crew
                 self.movie.actors = persons.actors

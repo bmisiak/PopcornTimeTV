@@ -19,6 +19,22 @@ protocol CatalogProviding {
 
     func movieDetails(imdbID: String) async throws -> Movie
     func showDetails(imdbID: String) async throws -> Show
+    func movieRecommendations(for movie: Movie) async throws -> [Movie]
+    func showRecommendations(for show: Show) async throws -> [Show]
+    func credits(for media: Media) async throws -> MediaCredits
+    func searchPeople(query: String) async throws -> [Person]
+    func movieCredits(for person: Person) async throws -> [Movie]
+    func showCredits(for person: Person) async throws -> [Show]
+}
+
+public struct MediaCredits {
+    public let actors: [Actor]
+    public let crew: [Crew]
+
+    public init(actors: [Actor], crew: [Crew]) {
+        self.actors = actors
+        self.crew = crew
+    }
 }
 
 enum CatalogProvider {
@@ -63,6 +79,34 @@ struct TMDBCatalogProvider: CatalogProviding {
 
     func showDetails(imdbID: String) async throws -> Show {
         try await TMDBCatalogApi.shared.show(imdbID: imdbID)
+    }
+
+    func movieRecommendations(for movie: Movie) async throws -> [Movie] {
+        guard let tmdbID = movie.tmdbId else { return [] }
+        return try await TMDBCatalogApi.shared.movieRecommendations(tmdbID: tmdbID)
+    }
+
+    func showRecommendations(for show: Show) async throws -> [Show] {
+        guard let tmdbID = show.tmdbId else { return [] }
+        return try await TMDBCatalogApi.shared.showRecommendations(tmdbID: tmdbID)
+    }
+
+    func credits(for media: Media) async throws -> MediaCredits {
+        guard let tmdbID = media.tmdbId else { return MediaCredits(actors: [], crew: []) }
+        let type: TMDB.MediaType = media is Movie ? .movies : .shows
+        return try await TMDBCatalogApi.shared.credits(type: type, tmdbID: tmdbID)
+    }
+
+    func searchPeople(query: String) async throws -> [Person] {
+        try await TMDBCatalogApi.shared.searchPeople(query: query)
+    }
+
+    func movieCredits(for person: Person) async throws -> [Movie] {
+        try await TMDBCatalogApi.shared.movieCredits(personID: person.tmdbId)
+    }
+
+    func showCredits(for person: Person) async throws -> [Show] {
+        try await TMDBCatalogApi.shared.showCredits(personID: person.tmdbId)
     }
 }
 
@@ -113,6 +157,32 @@ struct PopcornCatalogProvider: CatalogProviding {
         try await performWithServerFailover {
             try await PopcornApi.shared.getInfo(imdbID)
         }
+    }
+
+    func movieRecommendations(for movie: Movie) async throws -> [Movie] {
+        try await TraktApi.shared.getRelated(movie)
+    }
+
+    func showRecommendations(for show: Show) async throws -> [Show] {
+        try await TraktApi.shared.getRelated(show)
+    }
+
+    func credits(for media: Media) async throws -> MediaCredits {
+        let type: Trakt.MediaType = media is Movie ? .movies : .shows
+        let people = try await TraktApi.shared.getPeople(forMediaOfType: type, id: media.id)
+        return MediaCredits(actors: people.actors, crew: people.crew)
+    }
+
+    func searchPeople(query: String) async throws -> [Person] {
+        try await TraktApi.shared.search(forPerson: query)
+    }
+
+    func movieCredits(for person: Person) async throws -> [Movie] {
+        try await TraktApi.shared.getMediaCredits(forPersonWithId: person.imdbId, mediaType: Movie.self)
+    }
+
+    func showCredits(for person: Person) async throws -> [Show] {
+        try await TraktApi.shared.getMediaCredits(forPersonWithId: person.imdbId, mediaType: Show.self)
     }
 
     private func performWithServerFailover<T>(_ operation: () async throws -> T) async throws -> T {
