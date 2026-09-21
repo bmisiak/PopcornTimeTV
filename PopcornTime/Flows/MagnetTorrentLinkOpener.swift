@@ -11,13 +11,7 @@ import PopcornKit
 
 struct MagnetTorrentLinkOpener: ViewModifier {
     let scheme = "magnet"
-    
-    struct PlayTorrent: Identifiable, Equatable {
-        var id: String  { torrent.id }
-        var torrent: Torrent
-        var movie: Movie
-    }
-    @State var playTorrent: PlayTorrent?
+    @EnvironmentObject private var playbackCoordinator: PlaybackCoordinator
     
     let anyUrlMatch = Set(arrayLiteral: "*")
     
@@ -26,9 +20,6 @@ struct MagnetTorrentLinkOpener: ViewModifier {
             .onOpenURL { url in
                 openUrl(url: url)
             }
-            .fullScreenContent(item: $playTorrent, title: "", content: { item in
-                TorrentPlayerView(torrent: item.torrent, media: item.movie)
-            })
             .handlesExternalEvents(preferring: anyUrlMatch, allowing: anyUrlMatch)
     }
     
@@ -56,7 +47,7 @@ struct MagnetTorrentLinkOpener: ViewModifier {
             
             let torrent = Torrent(url: torrentUrl)
             let movie = Movie(title: url.lastPathComponent, id: id, torrents: [torrent])
-            self.playTorrent = PlayTorrent(torrent: torrent, movie: movie)
+            playbackCoordinator.play(media: movie, torrent: torrent)
         }
     }
 }

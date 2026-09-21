@@ -8,10 +8,10 @@
 
 import SwiftUI
 import PopcornKit
-import Combine
 
 struct EpisodesView: View {
     let theme = Theme()
+    @EnvironmentObject private var playbackCoordinator: PlaybackCoordinator
     
     var show: Show
     var episodes: [Episode]
@@ -22,7 +22,6 @@ struct EpisodesView: View {
         }
     }
     @State var downloadModel: DownloadButtonViewModel?
-    @State var showTorrent: PlayTorrentEpisode?
     
     var onFocus: () -> Void = {}
     
@@ -59,12 +58,7 @@ struct EpisodesView: View {
                 .focusSection()
             #endif
         }
-        .fullScreenContent(item: $showTorrent, title: show.title, content: { item in
-            TorrentPlayerView(torrent: item.torrent,
-                              media: item.episode,
-                              nextEpisode: NextEpisode(episode: item.episode, show: show).next())
-        })
-        .onChange(of: episodes) { newValue in
+        .onChange(of: episodes) { _, newValue in
             if currentEpisode == nil {
                 currentEpisode = newValue.first
             }
@@ -86,7 +80,11 @@ struct EpisodesView: View {
         let isSelected = episode.id == currentEpisode?.id && episode.episode == currentEpisode?.episode
         SelectTorrentQualityButton(media: episode, action: { torrent in
             self.currentEpisode = episode
-            showTorrent = PlayTorrentEpisode(torrent: torrent, episode: episode)
+            playbackCoordinator.play(
+                media: episode,
+                torrent: torrent,
+                nextEpisode: NextEpisode(episode: episode, show: show).next()
+            )
         }, label: {
             EpisodeView(episode: episode, onFocus: {
                 #if os(tvOS)

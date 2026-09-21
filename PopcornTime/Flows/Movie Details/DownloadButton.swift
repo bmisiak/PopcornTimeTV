@@ -16,9 +16,9 @@ struct DownloadButton: View {
         let buttonHeight: CGFloat = value(tvOS: 115, macOS: 81)
     }
     let theme = Theme()
+    @EnvironmentObject private var playbackCoordinator: PlaybackCoordinator
     
     @ObservedObject var viewModel: DownloadButtonViewModel
-    @State var showPlayer = false
     
     var body: some View {
         switch viewModel.state {
@@ -71,7 +71,7 @@ struct DownloadButton: View {
         })
         .frame(width: theme.buttonWidth, height: theme.buttonHeight)
         .confirmationDialog("", isPresented: $viewModel.showDownloadedActionSheet, actions: {
-            Button { showPlayer = true } label: { Text("Play") }
+            Button { playDownload() } label: { Text("Play") }
             Button(role: .destructive) {
                 viewModel.deleteDownload()
             } label: {
@@ -79,11 +79,6 @@ struct DownloadButton: View {
             }
             Button(role: .cancel, action: {}, label: { Text("Cancel") })
         })
-        .fullScreenContent(isPresented: $showPlayer, title: viewModel.media.title) {
-            TorrentPlayerView(torrent: viewModel.torrent ?? Torrent(),
-                              media: viewModel.media,
-                              nextEpisode: NextEpisode(media: viewModel.media)?.next())
-        }
     }
     
     var downloadingButton: some View {
@@ -109,13 +104,8 @@ struct DownloadButton: View {
                      Button(role: .destructive, action: {
                          self.viewModel.stopDownload()
                      }, label: { Text("Stop") })
-                    Button { showPlayer = true } label: { Text("Play") }
+                    Button { playDownload() } label: { Text("Play") }
         })
-        .fullScreenContent(isPresented: $showPlayer, title: viewModel.media.title) {
-            TorrentPlayerView(torrent: viewModel.torrent ?? Torrent(),
-                              media: viewModel.media,
-                              nextEpisode: NextEpisode(media: viewModel.media)?.next())
-        }
         .alert(isPresented: $viewModel.showDownloadFailedAlert, content: {
             Alert(title: Text( "Download Failed"),
                   message: Text(viewModel.downloadError?.localizedDescription ?? ""),
@@ -151,6 +141,14 @@ struct DownloadButton: View {
         })
         .frame(width: theme.buttonWidth, height: theme.buttonHeight)
     }
+
+    private func playDownload() {
+        playbackCoordinator.play(
+            media: viewModel.media,
+            torrent: viewModel.torrent ?? Torrent(),
+            nextEpisode: NextEpisode(media: viewModel.media)?.next()
+        )
+    }
 }
 
 struct DownloadButton_Previews: PreviewProvider {
@@ -160,6 +158,7 @@ struct DownloadButton_Previews: PreviewProvider {
                 DownloadButton(viewModel: self.model(state: state))
             }
         }
+        .environmentObject(PlaybackCoordinator())
         .padding(20)
         .buttonStyle(TVButtonStyle())
         .previewLayout(.fixed(width: 300, height: 750))

@@ -8,22 +8,16 @@
 
 import SwiftUI
 import PopcornKit
-import Combine
 
 struct PlayButton: View {
     let theme = Theme()
+    @EnvironmentObject private var playbackCoordinator: PlaybackCoordinator
     
     var media: Media
-    @State var showTorrent: PlayTorrent?
-    
-    struct PlayTorrent: Identifiable, Equatable {
-        var id: String  { torrent.id }
-        var torrent: Torrent
-    }
     
     var body: some View {
         SelectTorrentQualityButton(media: media, action: { torrent in
-            self.showTorrent = PlayTorrent(torrent: torrent)
+            playbackCoordinator.play(media: media, torrent: torrent)
         }, label: {
             VStack {
                 VisualEffectBlur() {
@@ -33,9 +27,6 @@ struct PlayButton: View {
             }
         })
         .frame(width: theme.buttonWidth, height: theme.buttonHeight)
-        .fullScreenContent(item: $showTorrent, title: media.title) { item in
-            TorrentPlayerView(torrent: item.torrent, media: media)
-        }
     }
 }
 
@@ -49,6 +40,7 @@ extension PlayButton {
 struct PlayButton_Previews: PreviewProvider {
     static var previews: some View {
         PlayButton(media: Movie.dummy())
+            .environmentObject(PlaybackCoordinator())
             .buttonStyle(TVButtonStyle())
             .padding(40)
             .previewLayout(.fixed(width: 300, height: 300))

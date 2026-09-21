@@ -12,30 +12,9 @@ import PopcornTorrent
 
 @main
 struct PopcornTime: App {
-    
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                TabBarView()
-                    .modifier(AcceptTermsOfService())
-                #if os(iOS) || os(macOS)
-                    .modifier(MagnetTorrentLinkOpener())
-                #elseif os(tvOS)
-                    .modifier(TopShelfLinkOpener())
-                #endif
-                    .onAppear {
-                        // bootstrap torrent session
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                            PTTorrentsSession.shared()
-                        }
-                    }
-            }
-            .preferredColorScheme(.dark)
-            #if os(iOS)
-            .accentColor(.white)
-            .navigationViewStyle(StackNavigationViewStyle())
-            .modifier(SecondaryScreen())
-            #endif
+            AppRootView()
         }
 //        #if os(iOS) || os(macOS)
 //        .commands(content: {
@@ -68,4 +47,42 @@ struct PopcornTime: App {
         }
     }
 #endif
+}
+
+private struct AppRootView: View {
+    @StateObject private var playbackCoordinator = PlaybackCoordinator()
+
+    var body: some View {
+        NavigationStack {
+            TabBarView()
+                .modifier(AcceptTermsOfService())
+            #if os(iOS) || os(macOS)
+                .modifier(MagnetTorrentLinkOpener())
+            #elseif os(tvOS)
+                .modifier(TopShelfLinkOpener())
+            #endif
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                        PTTorrentsSession.shared()
+                    }
+                }
+        }
+        .environmentObject(playbackCoordinator)
+        .fullScreenContent(
+            item: $playbackCoordinator.request,
+            title: playbackCoordinator.request?.media.title ?? ""
+        ) { request in
+            TorrentPlayerView(
+                torrent: request.torrent,
+                media: request.media,
+                nextEpisode: request.nextEpisode
+            )
+        }
+        .preferredColorScheme(.dark)
+        #if os(iOS)
+        .accentColor(.white)
+        .navigationViewStyle(StackNavigationViewStyle())
+        .modifier(SecondaryScreen())
+        #endif
+    }
 }

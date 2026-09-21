@@ -17,11 +17,11 @@ struct DownloadView: View {
         let detailSize: CGFloat = value(tvOS: 20, macOS: 16)
     }
     let theme = Theme()
+    @EnvironmentObject private var playbackCoordinator: PlaybackCoordinator
     
     @StateObject var viewModel: DownloadViewModel
     @State var showDeleteAction = false
     @State var showActions = false
-    @State var showPlayer = false
     
     var body: some View {
         Button(action: {
@@ -74,9 +74,6 @@ struct DownloadView: View {
         .confirmationDialog(viewModel.title, isPresented: $showActions, titleVisibility: .visible, actions: {
             downloadActions
         })
-        .fullScreenContent(isPresented: $showPlayer, title: viewModel.media.title) {
-            TorrentPlayerView(torrent: viewModel.torrent, media: viewModel.media)
-        }
         .onAppear {
             viewModel.addObserver()
         }
@@ -103,7 +100,7 @@ struct DownloadView: View {
         })
         
         let playDownload = Button(action: {
-            showPlayer = true
+            startPlayback()
         }, label: {
             Text("Play")
         })
@@ -117,7 +114,7 @@ struct DownloadView: View {
         switch viewModel.download.downloadStatus {
         case .finished:
             Button(action: {
-                showPlayer = true
+                startPlayback()
             }, label: {
                 Text("Play")
             })
@@ -140,6 +137,10 @@ struct DownloadView: View {
             deleteDownload
         @unknown default: EmptyView()
         }
+    }
+
+    private func startPlayback() {
+        playbackCoordinator.play(media: viewModel.media, torrent: viewModel.torrent)
     }
 }
 
@@ -175,11 +176,10 @@ struct DownloadView_Previews: PreviewProvider {
 //            DownloadView(viewModel: DownloadViewModel(download: PTTorrentDownload.dummy(status: .finished)))
 //                .previewDisplayName("Finished")
         }
+        .environmentObject(PlaybackCoordinator())
         .frame(width: 310, height: 245)
         .previewLayout(.sizeThatFits)
     }
 }
-
-
 
 

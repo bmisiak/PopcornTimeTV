@@ -9,10 +9,23 @@
 import Foundation
 import PopcornKit
 
-struct PlayTorrentEpisode: Identifiable, Equatable {
-    var id: String  { torrent.id }
-    var torrent: Torrent
-    var episode: Episode
+struct PlaybackRequest: Identifiable, Equatable {
+    let id = UUID()
+    let torrent: Torrent
+    let media: Media
+    let nextEpisode: NextEpisode?
+
+    static func == (lhs: PlaybackRequest, rhs: PlaybackRequest) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+final class PlaybackCoordinator: ObservableObject {
+    @Published var request: PlaybackRequest?
+
+    func play(media: Media, torrent: Torrent, nextEpisode: NextEpisode? = nil) {
+        request = PlaybackRequest(torrent: torrent, media: media, nextEpisode: nextEpisode)
+    }
 }
 
 struct NextEpisode {

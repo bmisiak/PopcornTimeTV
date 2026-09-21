@@ -32,6 +32,14 @@ enum TransportBarHint: String {
 
 
 class PlayerViewModel: NSObject, ObservableObject {
+    private enum CloseReason {
+        case dismissed
+        case finished
+        case failed
+    }
+
+    private static let cleanupQueue = DispatchQueue(label: "com.popcorntime.player-cleanup", qos: .utility)
+
     var media: Media
     private(set) var mediaplayer = VLCMediaPlayer()
     private var nowPlaying: NowPlayingController
@@ -43,6 +51,7 @@ class PlayerViewModel: NSObject, ObservableObject {
     private var idleWorkItem: DispatchWorkItem?
     internal var workItem: DispatchWorkItem?
     internal var torrentStatusChangeObserver: AnyObject?
+    private var isClosing = false
     
     internal var startPosition: Float = 0.0
     var resumePlayback = false
@@ -105,6 +114,11 @@ class PlayerViewModel: NSObject, ObservableObject {
         self.nowPlaying.onPlayPause = { [weak self] in
             self?.playandPause()
         }
+        self.nowPlaying.onStop = { [weak self] in
+            guard let self else { return }
+            self.stop()
+            self.dismiss?()
+        }
         
         torrentStatusChangeObserver = NotificationCenter.default.addObserver(forName: .PTTorrentStatusDidChange, object: streamer, queue: nil) { [unowned self] notification in
             guard !resumePlaybackAlert else { // will trigger UI invalidation - and screen becomes unresponsive
@@ -143,8 +157,7 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     func stop() {
-        mediaplayer.stop()
-        idleWorkItem?.cancel()
+        close(reason: .dismissed)
     }
     
     func playandPause() {
@@ -323,18 +336,38 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     func didFinishPlaying() {
+        close(reason: .finished)
+        dismiss?()
+    }
+
+    private func close(reason: CloseReason) {
+        guard !isClosing else { return }
+        isClosing = true
+
         mediaplayer.delegate = nil
         mediaplayer.stop()
-        
+        idleWorkItem?.cancel()
+        workItem?.cancel()
+
         nowPlaying.removeRemoteCommandCenterHandlers()
-//        endReceivingScreenNotifications()
-        
-        streamer.cancelStreamingAndDeleteData(Session.removeCacheOnPlayerExit)
-        
-        saveMediaProgress(status: .finished)
-        NotificationCenter.default.removeObserver(self, name: .PTTorrentStatusDidChange, object: nil)
-        
-        dismiss?()
+
+        switch reason {
+        case .finished:
+            saveMediaProgress(status: .finished)
+        case .dismissed, .failed:
+            saveMediaProgress(status: .paused)
+        }
+
+        if let observer = torrentStatusChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+            torrentStatusChangeObserver = nil
+        }
+
+        let streamer = streamer
+        let removeData = Session.removeCacheOnPlayerExit
+        Self.cleanupQueue.async {
+            streamer.cancelStreamingAndDeleteData(removeData)
+        }
     }
     
     @Published var videoAspectRatio: SwiftUI.ContentMode = .fit
@@ -405,14 +438,12 @@ extension PlayerViewModel: VLCMediaPlayerDelegate {
         progress.isBuffering = false
         switch mediaplayer.state {
         case .error:
-            fallthrough
+            close(reason: .failed)
+            dismiss?()
         case .ended:
-            fallthrough
+            didFinishPlaying()
         case .stopped:
-            let mediaEndedOnStart = mediaplayer.position == 0 // workaround
-            if !mediaEndedOnStart {
-                didFinishPlaying()
-            }
+            isPlaying = false
         case .paused:
             saveMediaProgress(status: .paused)
             isPlaying = false

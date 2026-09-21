@@ -12,7 +12,6 @@ import Kingfisher
 
 struct MovieDetailsView: View, MediaPosterLoader {
     let theme = Theme()
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     @StateObject var viewModel: MovieDetailsViewModel
     
@@ -47,17 +46,13 @@ struct MovieDetailsView: View, MediaPosterLoader {
                             }
                             .padding(.leading, theme.leftSectionLeading + 10)
                             #if os(iOS)
-                            if horizontalSizeClass == .compact {
-                                ScrollView(.horizontal) {
-                                    actionButtons(scroll: nil)
-                                        .padding(.vertical, 10)
-                                }
-                                .contentMargins(.horizontal, 10, for: .scrollContent)
-                                .ignoresSafeArea(.container, edges: .horizontal)
-                            } else {
+                            ScrollView(.horizontal) {
                                 actionButtons(scroll: nil)
-                                    .padding(.top, 10)
+                                    .padding(.vertical, 10)
                             }
+                            .contentMargins(.horizontal, 10, for: .scrollContent)
+                            .scrollBounceBehavior(.basedOnSize)
+                            .ignoresSafeArea(.container, edges: .horizontal)
                             #endif
                         }
                         .frame(idealHeight: theme.section1Height)

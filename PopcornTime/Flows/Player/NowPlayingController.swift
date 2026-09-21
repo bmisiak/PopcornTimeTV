@@ -23,6 +23,7 @@ class NowPlayingController {
     private(set) var media: Media
     private var imageGenerator: AVAssetImageGenerator
     var onPlayPause: () -> Void = {}
+    var onStop: () -> Void = {}
     
     private(set) var mediaThumbnailer: VLCMediaThumbnailer?
     var onThumbnailCompletion: (_ image: CGImage) -> Void = { _ in }
@@ -79,7 +80,7 @@ class NowPlayingController {
         }
         
         center.stopCommand.addTarget { (event) -> MPRemoteCommandHandlerStatus in
-            self.mediaplayer.stop()
+            self.onStop()
             return .success
         }
         
@@ -142,7 +143,7 @@ class NowPlayingController {
             case .remoteControlTogglePlayPause:
                 self.onPlayPause()
             case .remoteControlStop:
-                mediaplayer.stop()
+                onStop()
             default:
                 break
         }
