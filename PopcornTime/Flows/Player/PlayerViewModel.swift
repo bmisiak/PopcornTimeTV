@@ -338,14 +338,12 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     @Published var videoAspectRatio: SwiftUI.ContentMode = .fit
-    func switchVideoDimensions() {
+    func switchVideoDimensions(for viewportSize: CGSize) {
         #if os(iOS)
         resetIdleTimer()
         if mediaplayer.videoCropGeometry == nil // Change to aspect to scale to fill
         {
-            let screen =  UIScreen.screens.count > 1 ? UIScreen.screens[1] : UIScreen.main
-            let size = screen.bounds.size
-            mediaplayer.videoCropGeometry = UnsafeMutablePointer<Int8>(mutating: (size.vlcAspectRatio as NSString).utf8String)
+            mediaplayer.videoCropGeometry = UnsafeMutablePointer<Int8>(mutating: (viewportSize.vlcAspectRatio as NSString).utf8String)
 //            screenshotImageView!.contentMode = .scaleAspectFill
         } else // Change aspect ratio to scale to fit
         {

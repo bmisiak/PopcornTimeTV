@@ -12,6 +12,7 @@ import Kingfisher
 
 struct MovieDetailsView: View, MediaPosterLoader {
     let theme = Theme()
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     @StateObject var viewModel: MovieDetailsViewModel
     
@@ -47,7 +48,7 @@ struct MovieDetailsView: View, MediaPosterLoader {
                             }
                             .padding(.leading, 10)
                             #if os(iOS)
-                            if UIDevice.current.userInterfaceIdiom == .phone {
+                            if horizontalSizeClass == .compact {
                                 ScrollView(.horizontal) {
                                     actionButtons(scroll: nil)
                                         .padding([.leading, .top, .bottom], 10)

@@ -59,7 +59,6 @@ class PreloadTorrentViewModel: ObservableObject {
         UIApplication.shared.isIdleTimerDisabled = true
         let finishedLoading: () -> Void = {
             UIApplication.shared.isIdleTimerDisabled = false
-//            let flag = UIDevice.current.userInterfaceIdiom != .tv
         }
         #else
         let finishedLoading: () -> Void = { }

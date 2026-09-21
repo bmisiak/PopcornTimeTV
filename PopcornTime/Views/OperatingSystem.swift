@@ -12,29 +12,14 @@ import SwiftUI
 //var lastOrientation: UIDeviceOrientation = .unknown
 //#endif
 
-func value<T>(tvOS: T, macOS: T, compactSize: T? = nil) -> T {
+func value<T>(tvOS: T, macOS: T, compactSize: T? = nil, isCompact: Bool = true) -> T {
     #if os(tvOS)
         return tvOS
     #elseif os(macOS)
         return macOS
     #elseif os(iOS)
     
-    if UIDevice.current.userInterfaceIdiom == .phone, let compactSize = compactSize {
-        let isPortrait = UIScreen.main.bounds.width < UIScreen.main.bounds.height
-        return isPortrait ? compactSize : macOS
-//        var orientation = UIDevice.current.orientation
-//        orientation = (orientation.isPortrait || orientation.isLandscape) ? orientation : lastOrientation
-//        if orientation.isPortrait {
-//            lastOrientation = orientation
-//            return compactSize
-//        } else if orientation.isLandscape {
-//            lastOrientation = orientation
-//            return macOS
-//        }
-//        return compactSize
-    } else {
-        return macOS
-    }
+    return isCompact ? compactSize ?? macOS : macOS
     #endif
 }
 
@@ -46,8 +31,6 @@ struct CompactSizeClassModifier: ViewModifier {
     func body(content: Content) -> some View {
         #if os(iOS)
         
-//        let isPortrait = UIScreen.main.bounds.width < UIScreen.main.bounds.height
-//        if isPortrait {
         if sizeClass == .compact {
             
         } else {
@@ -63,28 +46,11 @@ extension View {
     
     @ViewBuilder
     func hideIfCompactSize() -> some View {
-        #if os(iOS)
-        let isPortrait = UIScreen.main.bounds.width < UIScreen.main.bounds.height
-        if UIDevice.current.userInterfaceIdiom == .phone, isPortrait {
-            
-        } else {
-            self
-        }
-        #else
-        self
-        #endif
+        modifier(CompactSizeClassModifier())
     }
     
     @ViewBuilder
     func hideIfPhone() -> some View {
-        #if os(iOS)
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            
-        } else {
-            self
-        }
-        #else
-        self
-        #endif
+        modifier(CompactSizeClassModifier())
     }
 }

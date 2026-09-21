@@ -12,30 +12,33 @@ import PopcornKit
 struct PlayerControlsView: View {
     @EnvironmentObject var viewModel: PlayerViewModel
     @Environment(\.dismiss) var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
-        VStack {
-            #if os(iOS)
-            topView
-                .padding([.leading, .trailing], 20)
-                .padding(.top, 10)
-            #endif
-            Spacer()
-            bottomView
-                .padding([.leading, .trailing], 20)
-                .padding(.bottom, 10)
+        GeometryReader { geometry in
+            VStack {
+                #if os(iOS)
+                topView(viewportSize: geometry.size)
+                    .padding([.leading, .trailing], 20)
+                    .padding(.top, 10)
+                #endif
+                Spacer()
+                bottomView
+                    .padding([.leading, .trailing], 20)
+                    .padding(.bottom, 10)
+            }
         }
         .preferredColorScheme(.dark)
         .accentColor(.white)
     }
     
     @ViewBuilder
-    var topView: some View {
+    func topView(viewportSize: CGSize) -> some View {
         HStack(alignment: .center, spacing: 0) {
             HStack(spacing: 0) {
                 Group {
                     closeButton
-                    ratioButton
+                    ratioButton(viewportSize: viewportSize)
                 }
                 .shadow(color: .gray, radius: 2, x: 0, y: 0)
             }
@@ -56,7 +59,7 @@ struct PlayerControlsView: View {
     @ViewBuilder
     var bottomView: some View {
         #if os(iOS)
-        let multiplier = UIDevice.current.userInterfaceIdiom == .phone ? 0.8 : 1
+        let multiplier = horizontalSizeClass == .compact ? 0.8 : 1
         Spacer()
         HStack(spacing: 60) {
             Group {
@@ -213,10 +216,10 @@ struct PlayerControlsView: View {
     }
     
     @ViewBuilder
-    var ratioButton: some View {
+    func ratioButton(viewportSize: CGSize) -> some View {
         #if os(iOS)
         Button {
-            viewModel.switchVideoDimensions()
+            viewModel.switchVideoDimensions(for: viewportSize)
         } label: {
             Color.clear
                 .overlay{

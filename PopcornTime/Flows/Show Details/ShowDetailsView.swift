@@ -12,6 +12,7 @@ import Kingfisher
 
 struct ShowDetailsView: View, MediaPosterLoader {
     let theme = Theme()
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     @StateObject var viewModel: ShowDetailsViewModel
     var show: Show {
@@ -59,7 +60,7 @@ struct ShowDetailsView: View, MediaPosterLoader {
                                     })
                                     .frame(maxWidth: theme.summaryMaxWidth)
                                 #if os(iOS)
-                                if UIDevice.current.userInterfaceIdiom == .phone {
+                                if horizontalSizeClass == .compact {
                                     ScrollView(.horizontal) {
                                         actionButtons(scroll: scroll)
                                             .padding(.bottom, 20)

@@ -7,67 +7,63 @@
 //
 
 import SwiftUI
-import Combine
 
+@MainActor
 final class ExternalDisplayContent: ObservableObject {
+    static let shared = ExternalDisplayContent()
+
     @Published var view: AnyView?
-    var isShowingOnExternalDisplay = false
+    @Published var isShowingOnExternalDisplay = false
+
+    private var connectedSceneIdentifiers = Set<String>()
+
+    func sceneDidConnect(_ session: UISceneSession) {
+        connectedSceneIdentifiers.insert(session.persistentIdentifier)
+        isShowingOnExternalDisplay = !connectedSceneIdentifiers.isEmpty
+    }
+
+    func sceneDidDisconnect(_ session: UISceneSession) {
+        connectedSceneIdentifiers.remove(session.persistentIdentifier)
+        isShowingOnExternalDisplay = !connectedSceneIdentifiers.isEmpty
+    }
 }
 
-/// Observer when a new display is connected
 struct SecondaryScreen: ViewModifier {
-    @State var additionalWindows: [UIWindow] = []
-    @StateObject var displayContent = ExternalDisplayContent()
-
-    private var screenDidConnectPublisher: AnyPublisher<UIScreen, Never> {
-        NotificationCenter.default
-            .publisher(for: UIScreen.didConnectNotification)
-            .compactMap { $0.object as? UIScreen }
-            .receive(on: RunLoop.main)
-            .eraseToAnyPublisher()
-    }
-
-    private var screenDidDisconnectPublisher: AnyPublisher<UIScreen, Never> {
-        NotificationCenter.default
-            .publisher(for: UIScreen.didDisconnectNotification)
-            .compactMap { $0.object as? UIScreen }
-            .receive(on: RunLoop.main)
-            .eraseToAnyPublisher()
-    }
+    @StateObject private var displayContent = ExternalDisplayContent.shared
     
     func body(content: Content) -> some View {
         content
             .environmentObject(displayContent)
-            .onReceive(screenDidConnectPublisher, perform: screenDidConnect)
-            .onReceive(screenDidDisconnectPublisher, perform: screenDidDisconnect)
     }
+}
 
-    private func screenDidDisconnect(_ screen: UIScreen) {
-        additionalWindows.removeAll { $0.screen == screen }
-        displayContent.isShowingOnExternalDisplay = false
-    }
+@MainActor
+final class ExternalDisplaySceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
 
-
-    private func screenDidConnect(_ screen: UIScreen) {
-        guard let windowScene = UIApplication.shared.connectedScenes
-            .first(where: { ($0 as? UIWindowScene)?.screen == screen }) as? UIWindowScene,
-              windowScene.session.role == .windowExternalDisplayNonInteractive else {
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard session.role == .windowExternalDisplayNonInteractive,
+              let windowScene = scene as? UIWindowScene else {
             return
         }
 
+        let displayContent = ExternalDisplayContent.shared
         let window = UIWindow(windowScene: windowScene)
-        
-        screen.overscanCompensation = .scale
-
-        let view = ExternalView(screen: screen)
+        windowScene.screen.overscanCompensation = .scale
+        let view = ExternalView()
             .environmentObject(displayContent)
-        let controller = UIHostingController(rootView: view)
-        window.rootViewController = controller
-        controller.view.bounds = screen.bounds
-        controller.view.backgroundColor = UIColor.red
-        window.isHidden = false
-        additionalWindows.append(window)
-        
-        displayContent.isShowingOnExternalDisplay = true
+        window.rootViewController = UIHostingController(rootView: view)
+        window.makeKeyAndVisible()
+        self.window = window
+        displayContent.sceneDidConnect(session)
+    }
+
+    func sceneDidDisconnect(_ scene: UIScene) {
+        ExternalDisplayContent.shared.sceneDidDisconnect(scene.session)
+        window = nil
     }
 }

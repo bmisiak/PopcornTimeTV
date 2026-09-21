@@ -11,8 +11,13 @@ import SwiftUI
 struct DownloadProgressView: View {
     let progress: Float
     #if os(tvOS) || os(iOS)
-    let lineWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .tv ? 10 : 3
-    let outlineWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .tv ? 5 : 1
+    #if os(tvOS)
+    let lineWidth: CGFloat = 10
+    let outlineWidth: CGFloat = 5
+    #else
+    let lineWidth: CGFloat = 3
+    let outlineWidth: CGFloat = 1
+    #endif
     #else
     let lineWidth: CGFloat = 3
     let outlineWidth: CGFloat = 1
